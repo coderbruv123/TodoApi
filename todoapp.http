@@ -1,0 +1,16 @@
+@todoapp_HostAddress = http://localhost:5199
+
+GET {{todoapp_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+
+
+{
+  "id": 1,
+  "title": "Buy groceries",
+  "description": "Milk, Bread, Eggs, and Cheese",
+  "isCompleted": false,
+  "createdAt": "2025-04-15T12:00:00Z",
+  "updatedAt": "2025-04-15T12:00:00Z",
+}
