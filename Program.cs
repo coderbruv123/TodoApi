@@ -21,24 +21,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+
 
 app.MapGet("/", () => "Hello World!")
     .WithName("GetHelloWorld")
@@ -81,13 +65,20 @@ app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo
 app.MapGet("/todo/{id:int}", async Task<Results<Ok<Todo>,NotFound>> (int id, ApplicationContext context) =>
 
 {
+    try{
     var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == id);
     if (todo is null)
     {
         return TypedResults.NotFound();
     }
     return TypedResults.Ok(todo);
-    
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred: {ex.Message}");
+        return TypedResults.NotFound();
+       
+    }
 }).WithName("GetTodo");
 
 app.MapDelete("/todo/{id:int}", async Task<Results<Ok, NotFound>> (int id, ApplicationContext context) =>
@@ -105,7 +96,3 @@ app.MapDelete("/todo/{id:int}", async Task<Results<Ok, NotFound>> (int id, Appli
 app.Run();
 
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
