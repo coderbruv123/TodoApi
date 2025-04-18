@@ -161,3 +161,4 @@ C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\ru\Microsoft.CodeAnalys
 C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\tr\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\zh-Hans\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
+C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\todoapp.sourcelink.json

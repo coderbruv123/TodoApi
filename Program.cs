@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Todoapp.Context;
 using Todoapp.Entities;
+using Todoapp.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<ITodoServices, TodoService>();
+
 
 var app = builder.Build();
 
@@ -27,38 +30,29 @@ app.UseHttpsRedirection();
 app.MapGet("/", () => "Hello World!")
     .WithName("GetHelloWorld")
     .WithOpenApi(); 
+    
 
-app.MapPost("/todo", async(Todo todo,ApplicationContext context) =>
+app.MapPost("/todo", async(ITodoServices todoServices,Todo todos) =>
 {
-    // Logic to add a new todo item
-    context.Todos.Add(todo);
-    await context.SaveChangesAsync();
+    var todo = await todoServices.AddTodoAsync(todos);
     return TypedResults.CreatedAtRoute(todo,"GetTodo", new { id = todo.Id });
 });
 
-app.MapGet("/todo", async(ApplicationContext context) =>
+app.MapGet("/todo", async(ITodoServices todoservice) =>
 {
-    // Logic to add a new todo item
-var todos = await context.Todos.ToListAsync(); 
+    var todos =  await todoservice.GetTodosAsync();
     return TypedResults.Ok(todos);
 });
 
-app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo todo, ApplicationContext context) =>
-{
-    
 
-    var existingTodo = await context.Todos.FindAsync(id);
+app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo todo, ITodoServices todoService) =>
+{
+
+    var existingTodo = await todoService.UpdateTodoAsync(id,todo);
     if (existingTodo is null)
     {
         return TypedResults.NotFound();
     }
-
-
-    existingTodo.Title = todo.Title;
-    existingTodo.Description = todo.Description;
-    existingTodo.IsCompleted = todo.IsCompleted;
-    existingTodo.UpdatedAt = DateTime.UtcNow;
-    await context.SaveChangesAsync();
     return TypedResults.Ok(existingTodo);
 });
 
