@@ -34,8 +34,8 @@ app.MapGet("/", () => "Hello World!")
 
 app.MapPost("/todo", async(ITodoServices todoServices,Todo todos) =>
 {
-    var todo = await todoServices.AddTodoAsync(todos);
-    return TypedResults.CreatedAtRoute(todo,"GetTodo", new { id = todo.Id });
+    var todo = await todoServices!.AddTodoAsync(todos);
+    return TypedResults.CreatedAtRoute(todo);
 });
 
 app.MapGet("/todo", async(ITodoServices todoservice) =>
@@ -56,11 +56,11 @@ app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo
     return TypedResults.Ok(existingTodo);
 });
 
-app.MapGet("/todo/{id:int}", async Task<Results<Ok<Todo>,NotFound>> (int id, ApplicationContext context) =>
+app.MapGet("/todo/{id:int}", async Task<Results<Ok<Todo>,NotFound>> (int id, ITodoServices todoServices) =>
 
 {
     try{
-    var todo = await context.Todos.FirstOrDefaultAsync(t => t.Id == id);
+    var todo = await todoServices.GetTodoAsync(id);
     if (todo is null)
     {
         return TypedResults.NotFound();
