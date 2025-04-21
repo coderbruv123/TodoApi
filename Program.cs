@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Todoapp.Context;
 using Todoapp.Entities;
 using Todoapp.Services;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,8 +14,26 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<ApplicationContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddScoped<ITodoServices, TodoService>();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+                        ValidateIssuerSigningKey = true,
 
+      
+        }
+        ;
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddScoped<ITodoServices, TodoService>();
+builder.Services.AddScoped<IAuthServices, AuthServices>();
 
 var app = builder.Build();
 
@@ -30,7 +51,37 @@ app.UseHttpsRedirection();
 app.MapGet("/", () => "Hello World!")
     .WithName("GetHelloWorld")
     .WithOpenApi(); 
-    
+
+
+//Login and Register
+
+app.MapPost("/register", async Task<IResult>(UserDTO request, IAuthServices services) =>
+{
+
+
+    var user =  await services.RegisterAsync(request);
+    if (user == null)
+    {
+        return Results.BadRequest("User already exists");
+    }
+   
+
+    return Results.Created($"/users/{user.Id}", new {user.Id, user.Username});
+});
+
+
+app.MapPost("/login", async(UserDTO request, IAuthServices services) => {
+    var user = await services.LoginAsync(request);
+
+    if(user == null)
+    {
+        return Results.BadRequest("Invalid username or password");
+    }
+    return Results.Ok(user);
+});
+
+
+//todos
 
 app.MapPost("/todo", async(ITodoServices todoServices,Todo todos) =>
 {
@@ -38,7 +89,7 @@ app.MapPost("/todo", async(ITodoServices todoServices,Todo todos) =>
     return TypedResults.CreatedAtRoute(todo);
 });
 
-app.MapGet("/todo", async(ITodoServices todoservice) =>
+app.MapGet("/todo",[Authorize] async(ITodoServices todoservice) =>
 {
     var todos =  await todoservice.GetTodosAsync();
     return TypedResults.Ok(todos);
@@ -56,7 +107,8 @@ app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo
     return TypedResults.Ok(existingTodo);
 });
 
-app.MapGet("/todo/{id:int}", async Task<Results<Ok<Todo>,NotFound>> (int id, ITodoServices todoServices) =>
+
+app.MapGet("/todo/{id:int}",  async Task<Results<Ok<Todo>,NotFound>> (int id, ITodoServices todoServices) =>
 
 {
     try{
@@ -87,6 +139,9 @@ app.MapDelete("/todo/{id:int}", async Task<Results<Ok, NotFound>> (int id, Appli
     return TypedResults.Ok();
 });
 
+
+app.UseAuthentication();
+app.UseAuthorization();
 app.Run();
 
 
