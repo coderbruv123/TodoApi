@@ -58,8 +58,8 @@ namespace Todoapp.Services{
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username)
         };
-        var key = new SymmetricSecurityKey (System.Text.Encoding.UTF8.GetBytes(configuration.GetValue<string>("Jwt:Key")));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var key = new SymmetricSecurityKey (System.Text.Encoding.UTF8.GetBytes(configuration.GetValue<string>("Jwt:Key")!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
         var tokenDescriptor=  new JwtSecurityToken(
             issuer: configuration.GetValue<string>("Jwt:Issuer"),
             audience: configuration.GetValue<string>("Jwt:Audience"),

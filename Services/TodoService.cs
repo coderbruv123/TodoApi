@@ -16,13 +16,14 @@ namespace Todoapp.Services{
         }        
                
 
-        public async Task<List<Todo>> GetTodosAsync()
+        public async Task<List<Todo>> GetTodosbyIdAsync(Guid userid)
         {
-            var todos = await context.Todos.ToListAsync();
+            var todos = await context.Todos.Where(t => t.UserId == userid).ToListAsync();
             return todos;
         }
+     
 
-        public async Task<Todo?> GetTodoAsync(int id)
+        public async Task<Todo?> GetTodoAsync(Guid id)
         {
             var todo = await context.Todos.FirstOrDefaultAsync(t=>t.Id == id);
             if(todo is null)
@@ -31,7 +32,7 @@ namespace Todoapp.Services{
             }
             return todo;
         }
-        public async Task<Todo?> DeleteTodoAsync(int id)
+        public async Task<Todo?> DeleteTodoAsync(Guid id)
         {
             var todo = await context.Todos.FirstOrDefaultAsync(t=>t.Id == id);
             if(todo is null)
@@ -41,7 +42,7 @@ namespace Todoapp.Services{
             context.Todos.Remove(todo);
             return todo;
         }
-        public async Task<Todo?> UpdateTodoAsync(int id, Todo todo)
+        public async Task<Todo?> UpdateTodoAsync(Guid id, Todo todo)
         {
             if(id != todo.Id)
             {
@@ -62,7 +63,7 @@ namespace Todoapp.Services{
              await context.SaveChangesAsync();
             return existingTodo;
         }
-       
-       
+
+      
     }
 }

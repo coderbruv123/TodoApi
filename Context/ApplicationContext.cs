@@ -10,5 +10,15 @@ namespace Todoapp.Context{
 
         public DbSet<Todo> Todos { get; set; } = null!;
         public DbSet<User> Users { get; set; } = null!;
+   
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Todo>()
+                .HasOne(t => t.User)
+                .WithMany(u => u.Todos)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        }
+   
     }
 }

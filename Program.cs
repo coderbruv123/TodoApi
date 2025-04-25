@@ -6,6 +6,7 @@ using Todoapp.Entities;
 using Todoapp.Services;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,22 +82,49 @@ app.MapPost("/login", async(UserDTO request, IAuthServices services) => {
 });
 
 
+
+
 //todos
 
-app.MapPost("/todo", async(ITodoServices todoServices,Todo todos) =>
+app.MapPost("/todo", async Task<IResult>(HttpContext httpContext, ITodoServices todoServices, TodoDTO todos) =>
 {
-    var todo = await todoServices!.AddTodoAsync(todos);
-    return TypedResults.CreatedAtRoute(todo);
+    var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
+    {
+        return Results.Unauthorized(); 
+    }
+
+    var todo2 = new Todo
+    {
+        Title = todos.Title,
+        Description = todos.Description,
+        IsCompleted = todos.IsCompleted,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow,
+        UserId = Guid.Parse(userIdClaim.Value)
+    };
+    
+    var todo = await todoServices!.AddTodoAsync(todo2);
+    return TypedResults.CreatedAtRoute("GetTodo",  todo);
 });
 
-app.MapGet("/todo",[Authorize] async(ITodoServices todoservice) =>
+
+app.MapGet("/todo", [Authorize] async (HttpContext httpContext, ITodoServices todoservice) =>
 {
-    var todos =  await todoservice.GetTodosAsync();
-    return TypedResults.Ok(todos);
+    var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier); 
+    if (userIdClaim == null)
+    {
+        return Results.Unauthorized(); 
+    }
+
+    var todos = await todoservice.GetTodosbyIdAsync(Guid.Parse(userIdClaim.Value)); 
+    return Results.Ok(todos); 
 });
 
 
-app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo todo, ITodoServices todoService) =>
+
+
+app.MapPut("/todo/{id:Guid}",async Task<Results<Ok<Todo>,NotFound>> (Guid id, Todo todo, ITodoServices todoService) =>
 {
 
     var existingTodo = await todoService.UpdateTodoAsync(id,todo);
@@ -108,7 +136,7 @@ app.MapPut("/todo/{id:int}",async Task<Results<Ok<Todo>,NotFound>> (int id, Todo
 });
 
 
-app.MapGet("/todo/{id:int}",  async Task<Results<Ok<Todo>,NotFound>> (int id, ITodoServices todoServices) =>
+app.MapGet("/todo/{id:Guid}",  async Task<Results<Ok<Todo>,NotFound>> (Guid id, ITodoServices todoServices) =>
 
 {
     try{
@@ -127,7 +155,7 @@ app.MapGet("/todo/{id:int}",  async Task<Results<Ok<Todo>,NotFound>> (int id, IT
     }
 }).WithName("GetTodo");
 
-app.MapDelete("/todo/{id:int}", async Task<Results<Ok, NotFound>> (int id, ApplicationContext context) =>
+app.MapDelete("/todo/{id:Guid}", async Task<Results<Ok, NotFound>> (int id, ApplicationContext context) =>
 {
     var todo = await context.Todos.FindAsync(id);
     if (todo is null)
