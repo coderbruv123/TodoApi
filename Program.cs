@@ -86,7 +86,7 @@ app.MapPost("/login", async(UserDTO request, IAuthServices services) => {
 
 //todos
 
-app.MapPost("/todo", async Task<IResult>(HttpContext httpContext, ITodoServices todoServices, TodoDTO todos) =>
+app.MapPost("/todo",[Authorize] async Task<IResult>(HttpContext httpContext, ITodoServices todoServices, TodoDTO todos) =>
 {
     var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
@@ -124,9 +124,19 @@ app.MapGet("/todo", [Authorize] async (HttpContext httpContext, ITodoServices to
 
 
 
-app.MapPut("/todo/{id:Guid}",async Task<Results<Ok<Todo>,NotFound>> (Guid id, Todo todo, ITodoServices todoService) =>
+app.MapPut("/todo/{id:Guid}",[Authorize] async Task<Results<Ok<Todo>,NotFound>> (Guid id, Todo todo, HttpContext context, ITodoServices todoService) =>
 {
 
+  var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
+    {
+        return TypedResults.NotFound();
+    }
+    var userId = Guid.Parse(userIdClaim.Value);
+    if(todo.UserId != userId)
+    {
+        return TypedResults.NotFound();
+    }
     var existingTodo = await todoService.UpdateTodoAsync(id,todo);
     if (existingTodo is null)
     {
@@ -136,12 +146,21 @@ app.MapPut("/todo/{id:Guid}",async Task<Results<Ok<Todo>,NotFound>> (Guid id, To
 });
 
 
-app.MapGet("/todo/{id:Guid}",  async Task<Results<Ok<Todo>,NotFound>> (Guid id, ITodoServices todoServices) =>
-
+app.MapGet("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>,NotFound>> (Guid id, HttpContext httpContext, ITodoServices todoServices) =>
 {
+    var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
+    {
+        return TypedResults.NotFound();
+    }
     try{
     var todo = await todoServices.GetTodoAsync(id);
+
     if (todo is null)
+    {
+        return TypedResults.NotFound();
+    }
+        if (todo.UserId != Guid.Parse(userIdClaim.Value))
     {
         return TypedResults.NotFound();
     }
@@ -150,20 +169,26 @@ app.MapGet("/todo/{id:Guid}",  async Task<Results<Ok<Todo>,NotFound>> (Guid id, 
     catch (Exception ex)
     {
         Console.WriteLine($"An error occurred: {ex.Message}");
-        return TypedResults.NotFound();
-       
+        return TypedResults.NotFound();       
     }
 }).WithName("GetTodo");
 
-app.MapDelete("/todo/{id:Guid}", async Task<Results<Ok, NotFound>> (int id, ApplicationContext context) =>
+app.MapDelete("/todo/{id:Guid}",[Authorize] async Task<Results<Ok, NotFound>> (Guid id, ITodoServices todoService, HttpContext context) =>
 {
-    var todo = await context.Todos.FindAsync(id);
+
+    var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
+    if (userIdClaim == null)
+    {
+        return TypedResults.NotFound();
+    }
+    var userId = Guid.Parse(userIdClaim.Value);
+
+    var todo = await todoService.DeleteTodoAsync(id, userId);
     if (todo is null)
     {
         return TypedResults.NotFound();
     }
-    context.Todos.Remove(todo);
-    await context.SaveChangesAsync();
+
     return TypedResults.Ok();
 });
 

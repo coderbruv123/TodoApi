@@ -32,10 +32,14 @@ namespace Todoapp.Services{
             }
             return todo;
         }
-        public async Task<Todo?> DeleteTodoAsync(Guid id)
+        public async Task<Todo?> DeleteTodoAsync(Guid id, Guid userId)
         {
             var todo = await context.Todos.FirstOrDefaultAsync(t=>t.Id == id);
             if(todo is null)
+            {
+                return null;
+            }
+            if(todo.UserId != userId)
             {
                 return null;
             }
