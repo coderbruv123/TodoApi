@@ -44,6 +44,7 @@ namespace Todoapp.Services{
                 return null;
             }
             context.Todos.Remove(todo);
+             await context.SaveChangesAsync();
             return todo;
         }
         public async Task<Todo?> UpdateTodoAsync(Guid id, Todo todo)
