@@ -26,13 +26,22 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
-                        ValidateIssuerSigningKey = true,
-
-      
-        }
-        ;
+            ValidateIssuerSigningKey = true,
+        };
     });
 builder.Services.AddAuthorization();
+
+// Add CORS services
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Replace with your React or Vite app's URL
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddScoped<ITodoServices, TodoService>();
 builder.Services.AddScoped<IAuthServices, AuthServices>();
 
@@ -46,52 +55,45 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Use CORS middleware
+app.UseCors("AllowFrontend");
 
-
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapGet("/", () => "Hello World!")
     .WithName("GetHelloWorld")
-    .WithOpenApi(); 
+    .WithOpenApi();
 
-
-//Login and Register
-
+// Login and Register
 app.MapPost("/register", async Task<IResult>(UserDTO request, IAuthServices services) =>
 {
-
-
-    var user =  await services.RegisterAsync(request);
+    var user = await services.RegisterAsync(request);
     if (user == null)
     {
         return Results.BadRequest("User already exists");
     }
-   
-
-    return Results.Created($"/users/{user.Id}", new {user.Id, user.Username});
+    return Results.Created($"/users/{user.Id}", new { user.Id, user.Username });
 });
 
-
-app.MapPost("/login", async(UserDTO request, IAuthServices services) => {
+app.MapPost("/login", async (UserDTO request, IAuthServices services) =>
+{
     var user = await services.LoginAsync(request);
 
-    if(user == null)
+    if (user == null)
     {
         return Results.BadRequest("Invalid username or password");
     }
     return Results.Ok(user);
 });
 
-
-
-
-//todos
-
-app.MapPost("/todo",[Authorize] async Task<IResult>(HttpContext httpContext, ITodoServices todoServices, TodoDTO todos) =>
+// Todos
+app.MapPost("/todo", [Authorize] async Task<IResult>(HttpContext httpContext, ITodoServices todoServices, TodoDTO todos) =>
 {
     var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
     {
-        return Results.Unauthorized(); 
+        return Results.Unauthorized();
     }
 
     var todo2 = new Todo
@@ -103,41 +105,36 @@ app.MapPost("/todo",[Authorize] async Task<IResult>(HttpContext httpContext, ITo
         UpdatedAt = DateTime.UtcNow,
         UserId = Guid.Parse(userIdClaim.Value)
     };
-    
-    var todo = await todoServices!.AddTodoAsync(todo2);
-    return TypedResults.CreatedAtRoute("GetTodo",  todo);
-});
 
+    var todo = await todoServices!.AddTodoAsync(todo2);
+    return TypedResults.CreatedAtRoute("GetTodo", todo);
+});
 
 app.MapGet("/todo", [Authorize] async (HttpContext httpContext, ITodoServices todoservice) =>
 {
-    var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier); 
+    var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
     {
-        return Results.Unauthorized(); 
+        return Results.Unauthorized();
     }
 
-    var todos = await todoservice.GetTodosbyIdAsync(Guid.Parse(userIdClaim.Value)); 
-    return Results.Ok(todos); 
+    var todos = await todoservice.GetTodosbyIdAsync(Guid.Parse(userIdClaim.Value));
+    return Results.Ok(todos);
 });
 
-
-
-
-app.MapPut("/todo/{id:Guid}",[Authorize] async Task<Results<Ok<Todo>,NotFound>> (Guid id, Todo todo, HttpContext context, ITodoServices todoService) =>
+app.MapPut("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>, NotFound>>(Guid id, Todo todo, HttpContext context, ITodoServices todoService) =>
 {
-
-  var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
+    var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
     {
         return TypedResults.NotFound();
     }
     var userId = Guid.Parse(userIdClaim.Value);
-    if(todo.UserId != userId)
+    if (todo.UserId != userId)
     {
         return TypedResults.NotFound();
     }
-    var existingTodo = await todoService.UpdateTodoAsync(id,todo);
+    var existingTodo = await todoService.UpdateTodoAsync(id, todo);
     if (existingTodo is null)
     {
         return TypedResults.NotFound();
@@ -145,37 +142,36 @@ app.MapPut("/todo/{id:Guid}",[Authorize] async Task<Results<Ok<Todo>,NotFound>> 
     return TypedResults.Ok(existingTodo);
 });
 
-
-app.MapGet("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>,NotFound>> (Guid id, HttpContext httpContext, ITodoServices todoServices) =>
+app.MapGet("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>, NotFound>>(Guid id, HttpContext httpContext, ITodoServices todoServices) =>
 {
     var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
     {
         return TypedResults.NotFound();
     }
-    try{
-    var todo = await todoServices.GetTodoAsync(id);
+    try
+    {
+        var todo = await todoServices.GetTodoAsync(id);
 
-    if (todo is null)
-    {
-        return TypedResults.NotFound();
-    }
+        if (todo is null)
+        {
+            return TypedResults.NotFound();
+        }
         if (todo.UserId != Guid.Parse(userIdClaim.Value))
-    {
-        return TypedResults.NotFound();
-    }
-    return TypedResults.Ok(todo);
+        {
+            return TypedResults.NotFound();
+        }
+        return TypedResults.Ok(todo);
     }
     catch (Exception ex)
     {
         Console.WriteLine($"An error occurred: {ex.Message}");
-        return TypedResults.NotFound();       
+        return TypedResults.NotFound();
     }
 }).WithName("GetTodo");
 
-app.MapDelete("/todo/{id:Guid}",[Authorize] async Task<Results<Ok, NotFound>> (Guid id, ITodoServices todoService, HttpContext context) =>
+app.MapDelete("/todo/{id:Guid}", [Authorize] async Task<Results<Ok, NotFound>>(Guid id, ITodoServices todoService, HttpContext context) =>
 {
-
     var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
     {
@@ -192,9 +188,6 @@ app.MapDelete("/todo/{id:Guid}",[Authorize] async Task<Results<Ok, NotFound>> (G
     return TypedResults.Ok();
 });
 
-
-app.UseAuthentication();
-app.UseAuthorization();
 app.Run();
 
 
