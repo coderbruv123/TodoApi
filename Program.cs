@@ -31,14 +31,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-// Add CORS services
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000") // Replace with your React or Vite app's URL
+        policy.WithOrigins("http://localhost:5173")
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .AllowCredentials();
     });
 });
 
@@ -47,7 +47,6 @@ builder.Services.AddScoped<IAuthServices, AuthServices>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -55,7 +54,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Use CORS middleware
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
@@ -65,7 +63,6 @@ app.MapGet("/", () => "Hello World!")
     .WithName("GetHelloWorld")
     .WithOpenApi();
 
-// Login and Register
 app.MapPost("/register", async Task<IResult>(UserDTO request, IAuthServices services) =>
 {
     var user = await services.RegisterAsync(request);
@@ -87,7 +84,6 @@ app.MapPost("/login", async (UserDTO request, IAuthServices services) =>
     return Results.Ok(user);
 });
 
-// Todos
 app.MapPost("/todo", [Authorize] async Task<IResult>(HttpContext httpContext, ITodoServices todoServices, TodoDTO todos) =>
 {
     var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
