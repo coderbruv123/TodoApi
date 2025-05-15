@@ -19,12 +19,6 @@ C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\scopedcss\bundle\todoap
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets.build.json
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets.development.json
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets.build.endpoints.json
-C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets\msbuild.todoapp.Microsoft.AspNetCore.StaticWebAssets.props
-C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets\msbuild.todoapp.Microsoft.AspNetCore.StaticWebAssetEndpoints.props
-C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets\msbuild.build.todoapp.props
-C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets\msbuild.buildMultiTargeting.todoapp.props
-C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets\msbuild.buildTransitive.todoapp.props
-C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets.pack.json
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\todoapp.csproj.Up2Date
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\todoapp.dll
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\refint\todoapp.dll
@@ -163,3 +157,4 @@ C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\zh-Hans\Microsoft.CodeA
 C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\zh-Hant\Microsoft.CodeAnalysis.Workspaces.MSBuild.BuildHost.resources.dll
 C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\todoapp.sourcelink.json
 C:\Users\Prazwal\Documents\pras\todoapp\bin\Debug\net9.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Prazwal\Documents\pras\todoapp\obj\Debug\net9.0\staticwebassets.build.json.cache
