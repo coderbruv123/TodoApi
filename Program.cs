@@ -118,7 +118,7 @@ app.MapGet("/todo", [Authorize] async (HttpContext httpContext, ITodoServices to
     return Results.Ok(todos);
 });
 
-app.MapPut("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>, NotFound>>(Guid id, Todo todo, HttpContext context, ITodoServices todoService) =>
+app.MapPut("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>, NotFound>>(Guid id, TodoDTO todoDto, HttpContext context, ITodoServices todoService) =>
 {
     var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier);
     if (userIdClaim == null)
@@ -126,16 +126,26 @@ app.MapPut("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>, NotFound>
         return TypedResults.NotFound();
     }
     var userId = Guid.Parse(userIdClaim.Value);
-    if (todo.UserId != userId)
+
+    // Fetch the existing todo to ensure it belongs to the user
+    var existingTodo = await todoService.GetTodoAsync(id);
+    if (existingTodo is null || existingTodo.UserId != userId)
     {
         return TypedResults.NotFound();
     }
-    var existingTodo = await todoService.UpdateTodoAsync(id, todo);
-    if (existingTodo is null)
+
+    // Update fields
+    existingTodo.Title = todoDto.Title;
+    existingTodo.Description = todoDto.Description;
+    existingTodo.IsCompleted = todoDto.IsCompleted;
+    existingTodo.UpdatedAt = DateTime.UtcNow;
+
+    var updatedTodo = await todoService.UpdateTodoAsync(id, existingTodo);
+    if (updatedTodo is null)
     {
         return TypedResults.NotFound();
     }
-    return TypedResults.Ok(existingTodo);
+    return TypedResults.Ok(updatedTodo);
 });
 
 app.MapGet("/todo/{id:Guid}", [Authorize] async Task<Results<Ok<Todo>, NotFound>>(Guid id, HttpContext httpContext, ITodoServices todoServices) =>
